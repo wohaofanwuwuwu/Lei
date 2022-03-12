@@ -119,8 +119,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wparam, LPARAM lparam)
         //hbmp=(HBITMAP)LoadImage(0,"t.bmp",IMAGE_BITMAP,0,0,LR_LOADFROMFILE);
         BITMAPINFO amp;
         amp.bmiHeader = infohead;
-        SetDIBitsToDevice(hddc, 0, 0, width, height, 0, 0, 0, height, pBits[count_frame%5], &amp, DIB_RGB_COLORS);
-        count_frame++;
+        SetDIBitsToDevice(hddc, 0, 0, width, height, 0, 0, 0, height, pBits[count_frame], &amp, DIB_RGB_COLORS);
+        count_frame=(count_frame+1)%5;
         cout << "paint" << endl;
 
         EndPaint(hwnd, &pps);
@@ -185,6 +185,7 @@ void Dialog(WNDCLASS& classes, HINSTANCE& hInstance) {
     classes.lpszMenuName = NULL;
     classes.style = 0;
 }
+void recv_picture();
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
 {
     pBits = new char* [frames];
@@ -219,29 +220,52 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                                     main_window, NULL, hInstance, NULL);
         ShowWindow(dialog_box, SW_SHOWNORMAL);*/
     connect_socket();
+    DWORD recv_picture_thread_id;
+    //CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)recv_picture, 0, 0, &recv_picture_thread_id);
+    int recive=0;
+    while(recive<6220800)
+     recive+= recv(s, &pBits[0][recive],10000, 0);
+    cout<<recive<<endl;
+    BITMAPINFOHEADER infohead;
+
+                infohead.biSize = sizeof(BITMAPINFOHEADER);
+                infohead.biWidth = 1920;
+                infohead.biHeight =1080;
+                infohead.biPlanes = 1;
+                infohead.biClrUsed = 0;
+                infohead.biBitCount = 24;
+                infohead.biCompression = BI_RGB;
+                infohead.biSizeImage = 1920*1080*3;//修改过要乘以biBitCount
+                infohead.biXPelsPerMeter =0;
+                infohead.biYPelsPerMeter =0;
+
+                BITMAPFILEHEADER filehead;
+
+                filehead.bfType = 0x4D42;  // "BM"
+                filehead.bfSize =sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + infohead.biSizeImage;//有歧义
+                filehead.bfReserved1 = 0;
+                filehead.bfReserved2 = 0;
+                filehead.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
+                ofstream o;
+                o.open("1.bmp",ios::binary|ios::out);
+                        o.write((char *)&filehead,sizeof(BITMAPFILEHEADER));
+                        o.write((char *)&infohead,sizeof(BITMAPINFOHEADER ));
+                        o.write((char *)pBits[0],1080*1920*3);
+                        o.close();
     while (1)
     {
-        for (int i = 0;i <= frames - 1;i++) {
-
-            int recive = recv(s, pBits[i], 6220800, 0);//maybe over 6221824
-            cout<<recive<<endl;
-            recive = recv(s, pBits[i], 6220800, 0);//maybe over 6221824
-            cout<<recive<<endl;
-            recive = recv(s, pBits[i], 6220800, 0);//maybe over 6221824
-            cout<<recive<<endl;
-            recive = recv(s, pBits[i], 6220800, 0);//maybe over 6221824
-            cout<<recive<<endl;
-            recive = recv(s, pBits[i], 6220800, 0);//maybe over 6221824
-            cout<<recive<<endl;
-            recive = recv(s, pBits[i], 6220800, 0);//maybe over 6221824
-            cout<<recive<<endl;
+        //maybe over 6220804
+        //cout<<recive<<endl;
+        /*for (int i = 0;i <= frames - 1;i++) {
+            //int recive = recv(s, pBits[i], 6220804, 0);//maybe over 6220804
+            //cout<<recive<<endl;
             PostMessage(hwnd, WM_PAINT, 0, 0);
             Sleep(10);
             GetMessage(&msg, NULL, 0, 0);
             TranslateMessage(&msg);   //将传来的消息翻译
             DispatchMessage(&msg);
-        }
-        decompress_interframe(pBits,frames,1920,1080);
+        }*/
+        //decompress_interframe(pBits,frames,1920,1080);
     }
 }
 void connect_socket() {
@@ -265,6 +289,11 @@ void connect_socket() {
     {
         cout<<"socket set up:  "<<WSAGetLastError()<<endl;
     }
+    int nsendbuf = 6220804;
+    int set_buf=setsockopt(s, SOL_SOCKET, SO_SNDBUF, (const char *)&nsendbuf, sizeof(int));
+    if (set_buf != 0) {
+        cout << "set buf error" << endl;
+    }
     sockaddr_in saddress;
     memset(&saddress, 0, sizeof(saddress));
     saddress.sin_family = AF_INET;
@@ -279,5 +308,8 @@ void connect_socket() {
         system("pause");
     }
     std::cout << "connect success" << std::endl;
+
+}
+void recv_picture(){
 
 }

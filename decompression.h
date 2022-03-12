@@ -1,4 +1,6 @@
-#include "interframe.h"
+#ifndef DECOMPRESSION_H
+#define DECOMPRESSION_H
+#include "compression.h"
 void decompress_interframe(char ** frames,int frames_num,int length,int width) {
 	for (int i = 1;i <= frames_num - 1;i++) {
 		int num = *(int*)frames[i];
@@ -25,3 +27,5 @@ void decompress_interframe(char ** frames,int frames_num,int length,int width) {
 		frames[i] = temp_frame;
 	}
 }
+
+#endif

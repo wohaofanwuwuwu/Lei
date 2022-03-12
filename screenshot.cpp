@@ -1,6 +1,6 @@
 #include <iostream>
 #include <windows.h>
-#include "interframe.h"
+#include "compression.h"
 #include <fstream>
 using namespace std;
 char** screenshot()
@@ -43,7 +43,7 @@ char** screenshot()
 
                 BITMAPINFO amp;
                 amp.bmiHeader=infohead;
-                char ** pBits=new char* [5];
+                char ** pBits=new char* [frames_num];
                 for(int i=0;i<=frames_num-1;i++)
                 pBits[i]=new char [width*height*3];
                 
@@ -90,7 +90,7 @@ char** screenshot()
                     counting++;
                     }
                 
-                    interframe_compression(pBits, frames_num - 1, width, height);
+                    interframe_compression(pBits, frames_num , width, height);
                     //cout << strlen((char*)*pBits) << endl;
                     //cout << *(int*)pBits[1] << endl;
                     DeleteObject(hbmp);

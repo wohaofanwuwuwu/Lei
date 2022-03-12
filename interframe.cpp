@@ -1,5 +1,5 @@
 #include <iostream>
-#include "interframe.h"
+#include "compression.h"
 using namespace std;
 enum big_small {
 	big,
@@ -66,7 +66,7 @@ void interframe_compression(char ** frames,int num_frame,int length,int width) {
 				}
 			}
 		}
-		//cout << "frame: " << i << "count :" << count<<endl;
+		cout << "frame: " << i << "count :" << count<<endl;
 		temp_frame[0] = count & 0xff;
 		temp_frame[1] = (count >> 8) & 0xff;
 		temp_frame[2] = (count >> 16) & 0xff;
