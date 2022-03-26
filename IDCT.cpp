@@ -29,7 +29,7 @@ void YCbCr_TO_RGB(char* rgbbuf, double* Y,  double* Cb, double* Cr,int width, in
         }
     }
 }
-void IDCT(double* buf, double* dctbuf, int width, int height, int beg,int fenliang) {
+void IDCT(double* buf, int * dctbuf, int width, int height, int beg,int fenliang) {
     float DctMapTmp[basic_block][basic_block];
     float t = 0;
     int i, j, k;
@@ -46,7 +46,7 @@ void IDCT(double* buf, double* dctbuf, int width, int height, int beg,int fenlia
             t = 0;
             for (k = 0;k < basic_block;k++) {
                 //t+=DCT_Mat[k][i]*DctMap[k][j];
-                t += IDCT_COS[i][k] * ((dctbuf[k * basic_block + j]*table[k*basic_block+j])/10.0);
+                t += IDCT_COS[i][k] * ((dctbuf[k * basic_block + j]*table[k*basic_block+j])/1.0);
             }
             DctMapTmp[i][j] = t;
         }

@@ -192,9 +192,9 @@ int HuffmanTree2DataPacket(char * result,Huffman_Tree* k,char *buf,int size) {
 }
 int UnHuffman(char * result,char* buf) {
 	char yanma=buf[0];
-	//cout <<"yanma :"<< (int)yanma<<" ";
+	cout <<"yanma :"<< (int)yanma<<" ";
 	int size = *(int*)&buf[1];
-	//cout << "file size : " << size << " ";
+	cout << "file size : " << size << " ";
 	short offset = *(short*)&buf[5];
 	//cout << " tree offset :" << offset << endl;
 	int n = size ;

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <windows.h>
 #include <fstream>
+#include "Huffman.h"
 //#include "decompression.h"
 #define basic_block 8
 using namespace std;
@@ -222,36 +223,53 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     connect_socket();
     DWORD recv_picture_thread_id;
     //CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)recv_picture, 0, 0, &recv_picture_thread_id);
-    int recive=0;
-    while(recive<6220800)
-     recive+= recv(s, &pBits[0][recive],10000, 0);
-    cout<<recive<<endl;
-    BITMAPINFOHEADER infohead;
+    char * recvbuf=new char [1920*1080*3*2];
+    char * tmp =new char [1920*1080*3*2];
+    int * len=new int ;
+    int recv_len=0;
+    while(true){
+        int recive=0;
+        recv(s,(char*)len,4,0);
+        while(len>recive)
+        recive+=recv(s,recvbuf+recive,len-recive,0);
+        UnHuffman(tmp,recvbuf);
 
-                infohead.biSize = sizeof(BITMAPINFOHEADER);
-                infohead.biWidth = 1920;
-                infohead.biHeight =1080;
-                infohead.biPlanes = 1;
-                infohead.biClrUsed = 0;
-                infohead.biBitCount = 24;
-                infohead.biCompression = BI_RGB;
-                infohead.biSizeImage = 1920*1080*3;//修改过要乘以biBitCount
-                infohead.biXPelsPerMeter =0;
-                infohead.biYPelsPerMeter =0;
+        int k = 0;
+        int temp[64];
+        double Y[8 * 8];
+        double Cb[8 * 8];
+        double Cr[8 * 8];
+        for (int i = 0;i < 1080/8;i ++) {
+            for (int j = 0;j < 1920/8;j ++) {
+            //cout << i << " " << j << endl;
+            k=UnZigZag(outbuf, temp, k);
 
-                BITMAPFILEHEADER filehead;
+            IDCT(Y, temp, 1920, 1080, 0, 0);
 
-                filehead.bfType = 0x4D42;  // "BM"
-                filehead.bfSize =sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + infohead.biSizeImage;//有歧义
-                filehead.bfReserved1 = 0;
-                filehead.bfReserved2 = 0;
-                filehead.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
-                ofstream o;
-                o.open("1.bmp",ios::binary|ios::out);
-                        o.write((char *)&filehead,sizeof(BITMAPFILEHEADER));
-                        o.write((char *)&infohead,sizeof(BITMAPINFOHEADER ));
-                        o.write((char *)pBits[0],1080*1920*3);
-                        o.close();
+            k=UnZigZag(outbuf, temp, k);
+
+            IDCT(Cb, temp, 1920, 1080, 0, 1);
+
+            k=UnZigZag(outbuf, temp, k);
+
+            IDCT(Cr, temp, 1920, 1080, 0, 2);
+
+            YCbCr_TO_RGB(pbits[0], Y, Cb, Cr, 1920, 1080, i * 1920 * 8 * 3 + j * 8 * 3, 0);
+            YCbCr_TO_RGB(pbits[0], Y, Cb, Cr, 1920, 1080, i * 1920 * 8 * 3 + j * 8 * 3, 1);
+            YCbCr_TO_RGB(pbits[0], Y, Cb, Cr, 1920, 1080, i * 1920 * 8 * 3 + j * 8 * 3, 2);
+        }
+    }
+    Run_Inverse_Shift((unsigned char*)pbits[0], 1920 * 1080 * 3);
+
+        for(int i=0;i<4;i++){
+            recive=0;
+            recv(s,(char*)len,4,0);
+            while(len>recive)
+            recive+=recv(s,recvbuf+recive,len-recive,0);
+        }
+    }
+
+
     while (1)
     {
         //maybe over 6220804

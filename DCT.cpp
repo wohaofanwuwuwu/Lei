@@ -57,15 +57,15 @@ void Init_Shift_Table() {
     }
 
 }
-void Run_Shift_YCbCr(char * buf,int size) {
+void Run_Shift_YCbCr(unsigned char * buf,int size) {
     for (int i = 0;i < size;i++) {
-        buf[i] = (char)Shift_YCbCr[(int)(unsigned char)buf[i]];
+        buf[i] = Shift_YCbCr[(int)(unsigned char)buf[i]];
     }
 }
-void Run_Inverse_Shift(char * buf,int size) {
+void Run_Inverse_Shift(unsigned char * buf,int size) {
     for (int i = 0;i < size;i++) {
         
-        buf[i] = (char)Inverse_Shift_YCbCr[(int)(unsigned char)buf[i]];
+        buf[i] = Inverse_Shift_YCbCr[(int)(unsigned char)buf[i]];
     }
 }
 int around(double a)
@@ -79,7 +79,7 @@ int around(double a)
         return int(a - 0.5);
     }
 }
-void RGB_TO_YCbCr(char *rgbbuf,double *ycbcr, int width, int height, int beg,int fenliang) {
+void RGB_TO_YCbCr(unsigned char *rgbbuf,double *ycbcr, int width, int height, int beg,int fenliang) {
     for (int i = 0;i < 8;i++) {
         for (int j = 0;j < 8;j++) {
             if (fenliang == 0) {//Y fenliang
@@ -115,12 +115,12 @@ void RGB_TO_YCbCr(char *rgbbuf,double *ycbcr, int width, int height, int beg,int
     }
     */
 }
-void DCT(char* buf, double* dctbuf,int width,int height,int beg,int fenliang) {
+void DCT(unsigned char* buf, int* dct,int width,int height,int beg,int fenliang) {
     float DctMapTmp[8][8];
-    double YCbCr[8*8];
+    double YCbCr[64];
     float t = 0;
     int i, j, k;
-
+    double dctbuf[64];
     RGB_TO_YCbCr(buf, YCbCr, width, height, beg, fenliang);
     
     //preprocess
@@ -166,6 +166,7 @@ void DCT(char* buf, double* dctbuf,int width,int height,int beg,int fenliang) {
                 t += DctMapTmp[i][k] * DCT_COS[j][k];
             }
             dctbuf[i*basic_block+j] = t;
+            
         }
     }
     //简单 的量化 
@@ -188,12 +189,19 @@ void DCT(char* buf, double* dctbuf,int width,int height,int beg,int fenliang) {
         for (int j = 0;j < 8;j++) {
             //dctbuf[i * 8 + j] = 0;
             if (dctbuf[i * 8 + j] >= 0) {
-                dctbuf[i * 8 + j] = ((int)((dctbuf[i * 8 + j]*10)/table[i*8+j] + 0.5));
+                dct[i * 8 + j] = ((int)((dctbuf[i * 8 + j]*1)/table[i*8+j] + 0.5));
             }
             else {
-                dctbuf[i * 8 + j] = ((int)((dctbuf[i * 8 + j]*10)/table[i*8+j] - 0.5));
+                dct[i * 8 + j] = ((int)((dctbuf[i * 8 + j]*1)/table[i*8+j] - 0.5));
             }
-            
+            if (dct[i * 8 + j]  > 30000 || dctbuf[i * 8 + j]  < -30000) {
+                cout << "error" << endl;
+                exit(0);
+            }
+
+            if ((dct[i * 8 + j] > 127 || dct[i * 8 + j] < -128) && (i != 0 && j != 0)) {
+                cout << "error " << i << "  " << j << "  " << dct[i * 8 + j] << endl;
+            }
         }
     }
     /*cout << "=========DCT========" << endl;

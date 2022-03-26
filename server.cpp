@@ -92,48 +92,54 @@ void connect_socket(SOCKET& s) {
     }
     cout << "listen success" << endl;
 }
-void send_picture() {
-    while (1) {
-        
-        while (lock == 1);
-        Client* temp;
-        temp = clients.head->next;
-        //should add second buf replace pBits?
-        while (temp != NULL) {
-            for (int i = 0;i <= frames_num - 1;i++) {
-                int picture_size;
-                if (i == 0) {
-                    picture_size = 6220800;
-                }
-                else {
-                    picture_size = (*(int*)pbits[i]) * 68 + 4;
-                }
-                int k=send(*(temp->socket), pbits[i], picture_size, 0);
-                cout << "pbits["<<i<<"] size: "<< *(int*)pbits[i] <<" send :"<< k << endl;
-                //Sleep(1);
-                //if(k==-1)
-                cout << WSAGetLastError() << endl;
-            }
-            temp = temp->next;
+
+int get_picture(char* outbuf, char* data) {
+
+    int dctbuf[64];
+    pbits = screenshot();
+    Run_Shift_YCbCr((unsigned char*)pbits[0], 1920 * 1080 * 3);
+    int pos = 0;
+    for (int i = 0;i < 1080 / 8;i++) {
+        for (int j = 0;j < 1920 / 8;j++) {
+            DCT((unsigned char*)pbits[0], dctbuf, 1920, 1080, i * 8 * 1920 * 3 + j * 8 * 3, 0);
+            pos = ZigZag(dctbuf, outbuf, pos);
+            DCT((unsigned char*)pbits[0], dctbuf, 1920, 1080, i * 8 * 1920 * 3 + j * 8 * 3, 1);
+            pos = ZigZag(dctbuf, outbuf, pos);
+            DCT((unsigned char*)pbits[0], dctbuf, 1920, 1080, i * 8 * 1920 * 3 + j * 8 * 3, 2);
+            pos = ZigZag(dctbuf, outbuf, pos);
+            //IDCT(pbits[0], dctbuf, 1920, 1080, i * 1920 * 8 * 3 + j * 8 * 3 , fenliang
         }
-        lock = 1;
     }
+    Huffman_Tree* t = CreateHuffmanTree(outbuf, pos);
+    int size = HuffmanTree2DataPacket(data, t, outbuf, pos);
+    //interframe_compression(pbits, 5, 1920, 1080);
+    cout << "first picture size = " << size << endl;
+    double Y[8 * 8];
+    double Cb[8 * 8];
+    double Cr[8 * 8];
+    //memset(outbuf, 0, 1920 * 1080 * 3 * 2);
+    //int after_huffman=UnHuffman(outbuf, data);
+    //cout <<"Huffman later "<< after_huffman << endl;
+    return size;
 }
-void get_picture() {
-    while (1) {
-        while (lock==0){}
-        double* dctbuf = new double[64];
-        pbits = screenshot();
-        for (int fenliang = 0;fenliang < 3;fenliang++) {
-            for (int i = 0;i < 1080 / 8;i++) {
-                for (int j = 0;j < 1920 / 8;j++) {
-                    DCT(pbits[0], dctbuf, 1920, 1080, i * 1920 * 8 * 3 + j * 8 * 3 , fenliang);
-                    //IDCT(pbits[0], dctbuf, 1920, 1080, i * 1920 * 8 * 3 + j * 8 * 3 , fenliang);
-                    //cout << 1 << endl;;
-                }
+void send_picture() {
+    char* outbuf = new char[1920 * 1080 * 3 * 2];
+    char* datapacket = new char[1920 * 1080 * 3 * 2];
+    while (true) {
+        int size = get_picture(outbuf, datapacket);
+        Client* p;
+        p = clients.head->next;
+        while (p != NULL) {
+            SOCKET sock = *(p->socket);
+            send(sock, (char*)&size, sizeof(int), 0);
+            send(sock, datapacket, size, 0);
+            for (int i = 1;i < 5;i++) {
+                int len = *(int*)(*(pbits + i));
+                send(sock, *(pbits + i), sizeof(int), 0);
+                send(sock, *(pbits + i), len, 0);
             }
+            p = p->next;
         }
-        lock = 0;
     }
 }
 int main()
@@ -142,8 +148,22 @@ int main()
     connect_socket(s);
     sockaddr_in* newAddr=new sockaddr_in;
     int len = sizeof(SOCKADDR);
-    pbits = screenshot();
+    //pbits = screenshot();
     Init_Shift_Table();
+    /*double Y[8 * 8];
+    double Cb[8 * 8];
+    double Cr[8 * 8];
+    int position = 0;
+    char* outbuf = new char[1920 * 1080 * 3 * 3];
+    char* data = new char[1920 * 1080 * 3 * 2];
+    get_picture(outbuf,data);*/
+    
+    /*int buf[64];
+    memset(buf, 0, 64);
+    
+    char* outbuf = new char[80];
+    ZigZag(buf, outbuf, 0);
+    UnZigZag(outbuf, buf, 0);*/
     /*char t[100] = "adsklj1093804saknlsnncsxld2eouewfhidslka83r43widjkaswqie23urhfeislaksdhax";
     cout << t << endl;
     char re[100];
@@ -154,13 +174,9 @@ int main()
     
     cout << re;
     */
-    double* dctbuf = new double[64];
-    double Y[8*8];
-    double Cb[8*8];
-    double Cr[8*8];
-    int position = 0;
     
-    cout << "===============original=============" << endl;
+    
+   /*cout << "===============original=============" << endl;
     for (int i = 0;i < 8;i++) {
         for (int j = 0;j < 8;j++) {
             cout << (int)(char)pbits[0][position + i * 1920 * 3 + j * 3] << "  ";
@@ -168,16 +184,17 @@ int main()
         cout << endl;
     }
     cout << "===============original==============" << endl;
-    Run_Shift_YCbCr(pbits[0], 1920 * 1080 * 3);
+    Run_Shift_YCbCr((unsigned char*)pbits[0], 1920 * 1080 * 3);
     cout << "===============original shift=============" << endl;
     for (int i = 0;i < 8;i++) {
         for (int j = 0;j < 8;j++) {
-            cout << (int)(char)pbits[0][position + i * 1920 * 3 + j * 3 ] << "  ";
+            cout << (int)(unsigned char)pbits[0][position + i * 1920 * 3 + j * 3 ] << "  ";
         }
         cout << endl;
     }
+    int dctbuf[64];
     cout << "===============original shift==============" << endl;
-    DCT(pbits[0], dctbuf, 1920, 1080, 0, 0);
+    DCT((unsigned char*)pbits[0], dctbuf, 1920, 1080, 0, 0);
     cout << "===============DCT=================" << endl;
     for (int i = 0;i < 8;i++) {
         for (int j = 0;j < 8;j++) {
@@ -198,12 +215,12 @@ int main()
     for (int i = 0;i < 1080/8;i++) {
         for (int j = 0;j < 1920/8;j++) {
             
-            DCT(pbits[0], dctbuf, 1920, 1080, i * 1920 * 8 * 3 + j * 8 * 3, 0);
+            DCT((unsigned char*)pbits[0], dctbuf, 1920, 1080, i * 1920 * 8 * 3 + j * 8 * 3, 0);
             
             IDCT(Y, dctbuf, 1920, 1080, i * 1920 * 8 * 3 + j * 8 * 3, 0);
-            DCT(pbits[0], dctbuf, 1920, 1080, i * 1920 * 8 * 3 + j * 8 * 3, 1);
+            DCT((unsigned char*)pbits[0], dctbuf, 1920, 1080, i * 1920 * 8 * 3 + j * 8 * 3, 1);
             IDCT(Cb, dctbuf, 1920, 1080, i * 1920 * 8 * 3 + j * 8 * 3, 1);
-            DCT(pbits[0], dctbuf, 1920, 1080, i * 1920 * 8 * 3 + j * 8 * 3, 2);
+            DCT((unsigned char*)pbits[0], dctbuf, 1920, 1080, i * 1920 * 8 * 3 + j * 8 * 3, 2);
             IDCT(Cr, dctbuf, 1920, 1080, i * 1920 * 8 * 3 + j * 8 * 3,2);
             
             YCbCr_TO_RGB(pbits[0], Y, Cb, Cr, 1920, 1080, i * 1920 * 8 * 3 + j * 8 * 3, 0);
@@ -211,17 +228,18 @@ int main()
             YCbCr_TO_RGB(pbits[0], Y, Cb, Cr, 1920, 1080, i * 1920 * 8 * 3 + j * 8 * 3, 2);
         }
     }
-    Run_Inverse_Shift(pbits[0], 1920 * 1080 * 3);
+    Run_Inverse_Shift((unsigned char*)pbits[0], 1920 * 1080 * 3);
     cout << "===============original unshift=============" << endl;
     for (int i = 0;i < 8;i++) {
         for (int j = 0;j < 8;j++) {
-            cout << (int)(char)pbits[0][position + i * 1920 * 3 + j * 3 ] << "  ";
+            cout << (int)(unsigned char)pbits[0][position + i * 1920 * 3 + j * 3 ] << "  ";
         }
         cout << endl;
     }
     cout << "===============original unshift==============" << endl;
+    */
     //set borden
-    cout << "===============after transform=============" << endl;
+    /*cout << "===============after transform=============" << endl;
     for (int i = 0;i < 8;i++) {
         pbits[0][position + i * 1920 * 3] = 0;
         pbits[0][position + i * 1920 * 3+7*3] = 0;
@@ -263,14 +281,14 @@ int main()
 
     ofstream o;
 
-    o.open("dct.bmp", ios::binary | ios::out);
+    o.open("dct2.bmp", ios::binary | ios::out);
     o.write((char*)&filehead, sizeof(BITMAPFILEHEADER));
     o.write((char*)&infohead, sizeof(BITMAPINFOHEADER));
     o.write((char*)pbits[0], 1920 * 1080 * 3);
     o.close();
-    
-    /* DWORD get_picture_thread_id;
-    CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)get_picture, 0, 0, &get_picture_thread_id);
+    */
+    DWORD get_picture_thread_id;
+    //CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)get_picture, 0, 0, &get_picture_thread_id);
     DWORD send_picture_thread_id;
     CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)send_picture, 0, 0, &send_picture_thread_id);
     while (1) {
@@ -289,7 +307,7 @@ int main()
     }
     while (1) {
         
-    }*/
+    }
     closesocket(s);
     WSACleanup();
     return 0;

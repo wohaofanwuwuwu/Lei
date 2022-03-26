@@ -1,7 +1,7 @@
 #ifndef DECOMPRESSION_H
 #define DECOMPRESSION_H
 #include "compression.h"
-void decompress_interframe(char ** frames,int frames_num,int length,int width) {
+void decompress_interframe(char ** frames,int length,int width) {
 	for (int i = 1;i <= frames_num - 1;i++) {
 		int num = *(int*)frames[i];
 		int sum = length * width * 3;

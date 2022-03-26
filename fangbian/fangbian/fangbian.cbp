@@ -32,6 +32,9 @@
 			<Add option="-Wall" />
 			<Add option="-fexceptions" />
 		</Compiler>
+		<Unit filename="Huffman.cpp" />
+		<Unit filename="Huffman.h" />
+		<Unit filename="interframe.cpp" />
 		<Unit filename="main.cpp" />
 		<Extensions>
 			<code_completion />
