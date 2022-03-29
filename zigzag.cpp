@@ -33,6 +33,7 @@ int ZigZag(int *buf, char * out,int beg)
 				}
 			}
 			out[k] = count;
+			
 			k++;
 		}
 		out[k] = (char)buf[ZigZagTable[i]];
@@ -53,6 +54,10 @@ int UnZigZag(char *buf, int * out,int beg)
 		if (buf[k] == 0) {
 			k++;
 			int count = (int)buf[k];
+			if (count == 0) {
+				cout << "count == 0" << endl;
+				exit(1);
+			}
 			for (int j = 0;j < count;j++,i++) {
 				out[ZigZagTable[i]] = 0;
 
@@ -64,6 +69,7 @@ int UnZigZag(char *buf, int * out,int beg)
 			out[ZigZagTable[i]] = (int)buf[k];
 			k++;
 		}
+
 	}
 	return k;
 

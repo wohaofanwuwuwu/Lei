@@ -9,7 +9,7 @@ void DCT(unsigned char* buf, int* dct, int width, int height, int beg,int fenlia
 void IDCT(double* buf, int* dctbuf, int width, int height, int beg,int fenliang);
 void YCbCr_TO_RGB(char* rgbbuf, double* Y, double* Cb, double* Cr, int width, int height, int beg, int fenliang);
 void DCT_OTHER_SIZE(char* buf, int width, int height);
-char** screenshot();
+void screenshot(char** pBits);
 void Run_Inverse_Shift(unsigned char* buf,int size);
 void Run_Shift_YCbCr(unsigned char* buf, int size);
 int around(double a);

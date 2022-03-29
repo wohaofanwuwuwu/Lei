@@ -1,6 +1,6 @@
 #include <winsock2.h>
 #include <iostream>
-#include "compression.h"
+#include "decompression.h"
 #include "Huffman.h"
 #include <fstream>
 using namespace std;
@@ -96,7 +96,7 @@ void connect_socket(SOCKET& s) {
 int get_picture(char* outbuf, char* data) {
 
     int dctbuf[64];
-    pbits = screenshot();
+    screenshot(pbits);
     Run_Shift_YCbCr((unsigned char*)pbits[0], 1920 * 1080 * 3);
     int pos = 0;
     for (int i = 0;i < 1080 / 8;i++) {
@@ -110,13 +110,42 @@ int get_picture(char* outbuf, char* data) {
             //IDCT(pbits[0], dctbuf, 1920, 1080, i * 1920 * 8 * 3 + j * 8 * 3 , fenliang
         }
     }
+
+    cout << "DCT and zigzag size: " << pos << endl;
     Huffman_Tree* t = CreateHuffmanTree(outbuf, pos);
     int size = HuffmanTree2DataPacket(data, t, outbuf, pos);
     //interframe_compression(pbits, 5, 1920, 1080);
+
     cout << "first picture size = " << size << endl;
+    /*memset(outbuf, 0, 1920 * 1080 * 3);
+    UnHuffman(outbuf, data);
+
+    int k = 0;
+    int temp[64];
     double Y[8 * 8];
     double Cb[8 * 8];
     double Cr[8 * 8];
+    for (int i = 0;i < 1080 / 8;i++) {
+        for (int j = 0;j < 1920 / 8;j++) {
+            k = UnZigZag(outbuf, temp, k);
+
+            IDCT(Y, temp, 1920, 1080, 0, 0);
+
+            k = UnZigZag(outbuf, temp, k);
+
+            IDCT(Cb, temp, 1920, 1080, 0, 1);
+
+            k = UnZigZag(outbuf, temp, k);
+
+            IDCT(Cr, temp, 1920, 1080, 0, 2);
+
+            YCbCr_TO_RGB(pbits[0], Y, Cb, Cr, 1920, 1080, i * 1920 * 8 * 3 + j * 8 * 3, 0);
+            YCbCr_TO_RGB(pbits[0], Y, Cb, Cr, 1920, 1080, i * 1920 * 8 * 3 + j * 8 * 3, 1);
+            YCbCr_TO_RGB(pbits[0], Y, Cb, Cr, 1920, 1080, i * 1920 * 8 * 3 + j * 8 * 3, 2);
+        }
+    }
+    Run_Inverse_Shift((unsigned char*)pbits[0], 1920 * 1080 * 3);
+    decompress_interframe(pbits, 1920, 1080);*/
     //memset(outbuf, 0, 1920 * 1080 * 3 * 2);
     //int after_huffman=UnHuffman(outbuf, data);
     //cout <<"Huffman later "<< after_huffman << endl;
@@ -132,10 +161,12 @@ void send_picture() {
         while (p != NULL) {
             SOCKET sock = *(p->socket);
             send(sock, (char*)&size, sizeof(int), 0);
-            send(sock, datapacket, size, 0);
+            send(sock, datapacket, size+1, 0);
             for (int i = 1;i < 5;i++) {
-                int len = *(int*)(*(pbits + i));
-                send(sock, *(pbits + i), sizeof(int), 0);
+                int len = (*(int*)(*(pbits + i)));
+                len = len * 68 + 4;
+                cout << "interframes "<<i<<" size " << len << endl;
+                send(sock, (char *)&len, sizeof(int), 0);
                 send(sock, *(pbits + i), len, 0);
             }
             p = p->next;
@@ -150,6 +181,10 @@ int main()
     int len = sizeof(SOCKADDR);
     //pbits = screenshot();
     Init_Shift_Table();
+    pbits = new char* [frames_num];
+    for (int i = 0;i <= frames_num - 1;i++) {
+        pbits[i] = new char[1920 * 1080 * 3];
+    }
     /*double Y[8 * 8];
     double Cb[8 * 8];
     double Cr[8 * 8];

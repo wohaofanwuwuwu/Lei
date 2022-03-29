@@ -6,6 +6,7 @@
 #define basic_block 8
 using namespace std;
 char bitmap[6221824];
+int lock = 0;
 char** pBits;
 int frames = 5;
 int count_frame = 0;
@@ -61,7 +62,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wparam, LPARAM lparam)
         break;
     case WM_PAINT:
     {
-
+        if (lock == 0) {
+            return DefWindowProc(hwnd, uMsg, wparam, lparam);
+        }
+        lock = 0;
         InvalidateRect(hwnd, 0, false);
         HDC hddc;
         HDC mddc;
@@ -198,6 +202,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     pBits = new char* [frames];
     for (int i = 0;i <= frames - 1;i++) {
         pBits[i] = new char[1920*1080*3];
+        memset(pBits[i], 0, 1920 * 1080 * 3);
     }
     WNDCLASS main_interface;
     InterFace(main_interface, hInstance);
@@ -292,15 +297,17 @@ void connect_socket() {
 }
 void recv_picture(LPVOID t) {
     auto hwnd = (HWND*)t;
-    char* recvbuf = new char[1920 * 1080 * 3 * 2];
-    char* outbuf = new char[1920 * 1080 * 3 * 2];
+    char* recvbuf = new char[1920 * 1080 * 3 * 4];
+    char* outbuf = new char[1920 * 1080 * 3 * 4];
     int len;
     while (true) {
-        int recive = 0;
+        int recive = 0;//=0?
         recv(s, (char*)&len, 4, 0);
+        len++;
         while (len > recive) {
             recive += recv(s, recvbuf + recive, len - recive, 0);
         }
+        //memset(outbuf, 0, 1920 * 1080 * 3 * 2);
         UnHuffman(outbuf, recvbuf);
 
         int k = 0;
@@ -327,19 +334,21 @@ void recv_picture(LPVOID t) {
                 YCbCr_TO_RGB(pBits[0], Y, Cb, Cr, 1920, 1080, i * 1920 * 8 * 3 + j * 8 * 3, 2);
             }
         }
-        bool flag = false;
         Run_Inverse_Shift((unsigned char*)pBits[0], 1920 * 1080 * 3);
-        PostMessage(*hwnd, WM_PAINT, 0, 0);
+        SendMessage(*hwnd, WM_PAINT, 0, 0);//PostMessage(*hwnd, WM_PAINT, 0, 0);
         for (int i = 1;i < 5;i++) {
             recive = 0;
             recv(s, (char*)&len, 4, 0);
             while (len > recive) {
                 recive += recv(s, pBits[i] + recive, len - recive, 0);
             }
+            lock = 1;
+            SendMessage(*hwnd, WM_PAINT, 0, 0);//PostMessage(*hwnd, WM_PAINT, 0, 0);
         }
         decompress_interframe(pBits, 1920, 1080);
+        lock = 1;
         for (int i = 0;i <4;i++) {
-            PostMessage(*hwnd, WM_PAINT, 0, 0);
+            SendMessage(*hwnd, WM_PAINT, 0, 0);
             Sleep(20);
         }
     }

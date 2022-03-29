@@ -3,7 +3,7 @@
 #include "compression.h"
 #include <fstream>
 using namespace std;
-char** screenshot()
+void screenshot(char ** pBits)
 {
 
                 //mddc = CreateCompatibleDC(hddc);
@@ -43,9 +43,9 @@ char** screenshot()
 
                 BITMAPINFO amp;
                 amp.bmiHeader=infohead;
-                char ** pBits=new char* [frames_num];
+                /*char ** pBits=new char* [frames_num];
                 for(int i=0;i<=frames_num-1;i++)
-                pBits[i]=new char [width*height*3];
+                pBits[i]=new char [width*height*3];*/
                 
                int counting=0;
                 while (1)
@@ -53,83 +53,18 @@ char** screenshot()
 
                     BitBlt(mddc, 0, 0, width, height, hddc, 0, 0, SRCCOPY);
                     GetDIBits(mddc, hbmp, 0, height, pBits[counting], (LPBITMAPINFO) & amp, DIB_RGB_COLORS);
-                    //cout<<(unsigned int)pBits[counting][2258]<<endl;
-                    //cout << height << endl;
+                    
                     if(counting==frames_num-1)
                     {
-                        /*    ofstream o;
-
-                        o.open("1.bmp",ios::binary|ios::out);
-                        o.write((char *)&filehead,sizeof(BITMAPFILEHEADER));
-                        o.write((char *)&infohead,sizeof(BITMAPINFOHEADER ));
-                        o.write((char *)pBits[0],width*height*3);
-                        o.close();
-                        cout<<"one picture"<<endl;
-                    o.open("2.bmp",ios::binary|ios::out);
-                    o.write((char *)&filehead,sizeof(BITMAPFILEHEADER));
-                    o.write((char *)&infohead,sizeof(BITMAPINFOHEADER ));
-                    o.write((char *)pBits[1],width*height*3);
-                    o.close();
-                    o.open("3.bmp",ios::binary|ios::out);
-                    o.write((char *)&filehead,sizeof(BITMAPFILEHEADER));
-                    o.write((char *)&infohead,sizeof(BITMAPINFOHEADER ));
-                    o.write((char *)pBits[2],width*height*3);
-                    o.close();
-                    o.open("4.bmp",ios::binary|ios::out);
-                    o.write((char *)&filehead,sizeof(BITMAPFILEHEADER));
-                    o.write((char *)&infohead,sizeof(BITMAPINFOHEADER ));
-                    o.write((char *)pBits[3],width*height*3);
-                    o.close();
-                    o.open("5.bmp",ios::binary|ios::out);
-                    o.write((char *)&filehead,sizeof(BITMAPFILEHEADER));
-                    o.write((char *)&infohead,sizeof(BITMAPINFOHEADER ));
-                    o.write((char *)pBits[4],width*height*3);
-                    o.close();*/
-                    break;
+                        
+                        break;
                     }
                     counting++;
-                    }
+                }
                 
                     interframe_compression(pBits, frames_num , width, height);
-                    //cout << strlen((char*)*pBits) << endl;
-                    //cout << *(int*)pBits[1] << endl;
+                    
                     DeleteObject(hbmp);
-                    //test decompress
-                    //decompress_interframe(pBits, 5, width, height);
-                    /*while (1)
-                    {
-                        if (counting == 4)
-                        {
-                            ofstream o;
+                    
 
-                            o.open("6.bmp", ios::binary | ios::out);
-                            o.write((char*)&filehead, sizeof(BITMAPFILEHEADER));
-                            o.write((char*)&infohead, sizeof(BITMAPINFOHEADER));
-                            o.write((char*)pBits[0], width * height * 3);
-                            o.close();
-                            o.open("7.bmp", ios::binary | ios::out);
-                            o.write((char*)&filehead, sizeof(BITMAPFILEHEADER));
-                            o.write((char*)&infohead, sizeof(BITMAPINFOHEADER));
-                            o.write((char*)pBits[1], width * height * 3);
-                            o.close();
-                            o.open("8.bmp", ios::binary | ios::out);
-                            o.write((char*)&filehead, sizeof(BITMAPFILEHEADER));
-                            o.write((char*)&infohead, sizeof(BITMAPINFOHEADER));
-                            o.write((char*)pBits[2], width * height * 3);
-                            o.close();
-                            o.open("9.bmp", ios::binary | ios::out);
-                            o.write((char*)&filehead, sizeof(BITMAPFILEHEADER));
-                            o.write((char*)&infohead, sizeof(BITMAPINFOHEADER));
-                            o.write((char*)pBits[3], width * height * 3);
-                            o.close();
-                            o.open("10.bmp", ios::binary | ios::out);
-                            o.write((char*)&filehead, sizeof(BITMAPFILEHEADER));
-                            o.write((char*)&infohead, sizeof(BITMAPINFOHEADER));
-                            o.write((char*)pBits[4], width * height * 3);
-                            o.close();
-                            break;
-                        }
-                        counting++;
-                    }*/
-                return pBits;
 }

@@ -120,7 +120,7 @@ int HuffmanTree2DataPacket(char * result,Huffman_Tree* k,char *buf,int size) {
 	int stack_top = 0;
 	int stack_bottom = 0;
 	stack[stack_top++] = k->size - 1;
-	//cout << "head node :" << k->head[stack[stack_bottom]].zifu << endl;
+
 	int L = k->head[stack[stack_bottom]].left;
 	int R = k->head[stack[stack_bottom]].right;
 	if (L != -1) {
@@ -133,7 +133,7 @@ int HuffmanTree2DataPacket(char * result,Huffman_Tree* k,char *buf,int size) {
 		num_word += 2;
 	}
 	stack_bottom++;
-	//cout << "left node :" << k->head[stack[stack_bottom]].zifu << endl;
+
 	int weizhi = 0;
 	while (stack_bottom < stack_top) {
 		L = k->head[stack[stack_bottom]].left;
@@ -144,14 +144,14 @@ int HuffmanTree2DataPacket(char * result,Huffman_Tree* k,char *buf,int size) {
 			result[num_word] = k->head[stack[stack_bottom]].zifu;
 			
 			result[num_word+1] = (stack_top - stack_bottom)/2;
-			//cout << "i :"<<weizhi++<<" zifu :" << result[num_word] << " child :" << (int)(unsigned int)result[num_word + 1] << endl;
+			
 			stack_top++;
 			num_word += 2;
 		}
 		else {
 			result[num_word] = k->head[stack[stack_bottom]].zifu;
 			result[num_word + 1] = 0;
-			//cout << "i :" << weizhi++ << " zifu :" << result[num_word] << " child :" << (int)(unsigned int)result[num_word + 1] << endl;
+			
 			num_word += 2;
 		}
 		stack_bottom++;
@@ -161,16 +161,15 @@ int HuffmanTree2DataPacket(char * result,Huffman_Tree* k,char *buf,int size) {
 	result[5] = (short)num_word  & 0xff;
 	result[6] = ((short)num_word >> 8) & 0xff;
 	int up_to_eight = 0;
-	//cout << "shujubao :" << " ";
+
 	for (int i = size-1;i >=0;i--) {
 		int j;
 		j = MapHuffman_Node[buf[i]];
-		////cout << "j :" << j << "zifu :"<<buf[i]<<endl;
+
 		int num = k->size-1;
 		while (j!=num) {
 			result[num_word]=(result[num_word] << 1)| k->head[j].flag;
-			//cout  << k->head[j].flag << " ";
-			//cout << (int)(unsigned char)result[num_word] << endl;
+			
 			up_to_eight++;
 			if (up_to_eight == 8) {
 				num_word++;
@@ -187,7 +186,7 @@ int HuffmanTree2DataPacket(char * result,Huffman_Tree* k,char *buf,int size) {
 	result[0] = (unsigned char)up_to_eight;
 	delete[] k->head;
 	delete[] k;
-
+	MapHuffman_Node.clear();
 	return num_word;
 }
 int UnHuffman(char * result,char* buf) {
@@ -196,23 +195,29 @@ int UnHuffman(char * result,char* buf) {
 	int size = *(int*)&buf[1];
 	cout << "file size : " << size << " ";
 	short offset = *(short*)&buf[5];
-	//cout << " tree offset :" << offset << endl;
-	int n = size ;
+
+	int n = size;
 	int count = 0;
 	int count_eight = 8-(int)yanma;
+	
+	if (count_eight == 8) {
+		n--;
+		count_eight = 0;
+	}
 	Pair_Tree_Node* tree=(Pair_Tree_Node*)&buf[7];
-	//cout << "distance :" << (int)(unsigned char)tree[1].right.distance << endl;
+
 	while (n >= offset) {
 		int k = 0;
 		int distance = 1;
 
 		LOOP:
 			if ((buf[n] & 0x1) == 0) {
-				//cout << "goto left"<<" zifu :" << tree[k].left.zifu <<" and in buf["<<n<<"]"<<" count_eight= "<<count_eight<<endl;
+
 				buf[n] = buf[n] >> 1;
 				distance= (int)(unsigned char)tree[k].left.distance;
+				
 				count_eight++;
-				if (count_eight == 8) {
+				if (count_eight >= 8) {
 					count_eight = 0;
 					n--;
 				}
@@ -223,11 +228,12 @@ int UnHuffman(char * result,char* buf) {
 				}
 			}
 			else {
-				////cout << "goto right" << " zifu :" << tree[k].right.zifu << " and in buf[" << n << "]" <<" count_eight="<<count_eight<< endl;
+				
 				buf[n] = buf[n] >> 1;
 				distance= (int)(unsigned char)tree[k].right.distance;
+				
 				count_eight++;
-				if (count_eight == 8) {
+				if (count_eight >= 8) {
 					count_eight = 0;
 					n--;
 				}
